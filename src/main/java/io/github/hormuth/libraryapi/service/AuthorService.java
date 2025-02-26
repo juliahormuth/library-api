@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.stereotype.Service;
 
 import io.github.hormuth.libraryapi.exception.ExceptionOperationNotPermitted;
@@ -49,6 +51,17 @@ public class AuthorService {
             return authorRepository.findByNationality(nationality);
         }
         return authorRepository.findAll();
+    }
+
+    public List<Author> findAllByExample(String name, String nationality) {
+        Author author = new Author();
+        author.setName(name);
+        author.setNationality(nationality);
+
+        ExampleMatcher matcher = ExampleMatcher.matching().withIgnoreNullValues().withIgnoreCase().withStringMatcher(ExampleMatcher.StringMatcher.CONTAINING);
+
+        Example<Author> example = Example.of(author, matcher);
+        return authorRepository.findAll(example);
     }
 
     public void updateById(Author author) {

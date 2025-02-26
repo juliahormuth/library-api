@@ -11,6 +11,7 @@ import io.github.hormuth.libraryapi.exception.ExceptionDuplicatedRegister;
 import io.github.hormuth.libraryapi.exception.ExceptionOperationNotPermitted;
 import io.github.hormuth.libraryapi.model.Author;
 import io.github.hormuth.libraryapi.service.AuthorService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import java.net.URI;
@@ -34,7 +35,7 @@ public class AuthorController {
     private final AuthorService authorService;
 
     @PostMapping()
-    public ResponseEntity<Object> save(@RequestBody AuthorDTO entity) {
+    public ResponseEntity<Object> save(@RequestBody @Valid AuthorDTO entity) {
         try {
             var author = entity.mapToAuthor();
             authorService.save(author);
@@ -77,7 +78,7 @@ public class AuthorController {
     @GetMapping()
     public ResponseEntity<List<AuthorDTO>> findAllByNameAndNationality(@RequestParam(value = "name") String name,
             @RequestParam(value = "nationality") String nationality) {
-        List<Author> result = authorService.findAllByNameAndNationality(name, nationality);
+        List<Author> result = authorService.findAllByExample(name, nationality);
         List<AuthorDTO> authors = result.stream().map(author -> new AuthorDTO(author.getId(), author.getName(), author.getBirthday(), author.getNationality()))
                 .toList();
         return ResponseEntity.ok(authors);
