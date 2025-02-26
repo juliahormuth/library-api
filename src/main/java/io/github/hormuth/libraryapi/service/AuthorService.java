@@ -11,19 +11,15 @@ import io.github.hormuth.libraryapi.model.Author;
 import io.github.hormuth.libraryapi.repository.AuthorRepository;
 import io.github.hormuth.libraryapi.repository.BookRepository;
 import io.github.hormuth.libraryapi.validador.AuthorValidador;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class AuthorService {
 
-    private AuthorRepository authorRepository;
-    private BookRepository bookRepository;
-    private AuthorValidador authorValidador;
-
-    public AuthorService(AuthorRepository authorRepository, BookRepository bookRepository, AuthorValidador authorValidador) {
-        this.authorRepository = authorRepository;
-        this.bookRepository = bookRepository;
-        this.authorValidador = authorValidador;
-    }
+    private final AuthorRepository authorRepository;
+    private final BookRepository bookRepository;
+    private final AuthorValidador authorValidador;
 
     public Author save(Author author) {
         authorValidador.validade(author);

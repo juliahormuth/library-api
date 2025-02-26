@@ -8,15 +8,16 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import io.github.hormuth.libraryapi.controller.dto.AuthorDTO;
 import io.github.hormuth.libraryapi.controller.dto.ErrorResponse;
 import io.github.hormuth.libraryapi.exception.ExceptionDuplicatedRegister;
+import io.github.hormuth.libraryapi.exception.ExceptionOperationNotPermitted;
 import io.github.hormuth.libraryapi.model.Author;
 import io.github.hormuth.libraryapi.service.AuthorService;
+import lombok.RequiredArgsConstructor;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,10 +28,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/authors")
+@RequiredArgsConstructor
 public class AuthorController {
 
-    @Autowired
-    private AuthorService authorService;
+    private final AuthorService authorService;
 
     @PostMapping()
     public ResponseEntity<Object> save(@RequestBody AuthorDTO entity) {
@@ -58,14 +59,19 @@ public class AuthorController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") String id) {
-        var idAuhor = UUID.fromString(id);
-        Optional<Author> author = authorService.findById(idAuhor);
-        if (author.isEmpty()) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<Object> delete(@PathVariable("id") String id) {
+        try {
+            var idAuhor = UUID.fromString(id);
+            Optional<Author> author = authorService.findById(idAuhor);
+            if (author.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            authorService.delete(author.get());
+            return ResponseEntity.noContent().build();
+        } catch (ExceptionOperationNotPermitted e) {
+            var errorResponse = ErrorResponse.standardMessage(e.getMessage());
+            return ResponseEntity.status(errorResponse.status()).body(errorResponse.message());
         }
-        authorService.delete(author.get());
-        return ResponseEntity.noContent().build();
     }
 
     @GetMapping()
