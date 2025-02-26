@@ -31,7 +31,7 @@ public class AuthorController {
         var author = entity.mapToAuthor();
         authorService.save(author);
 
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("{id}").buildAndExpand(author.getId()).toUri();
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(author.getId()).toUri();
 
         return ResponseEntity.created(location).build();
     }
