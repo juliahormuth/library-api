@@ -3,8 +3,11 @@ package io.github.hormuth.libraryapi.model;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
@@ -16,6 +19,7 @@ import lombok.Data;
 
 @Entity
 @Data
+@EntityListeners(AuditingEntityListener.class)
 public class Book {
     @Id
     @Column(name = "id")

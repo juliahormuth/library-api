@@ -3,12 +3,9 @@ package io.github.hormuth.libraryapi.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import io.github.hormuth.libraryapi.controller.dto.AuthorDTO;
-import io.github.hormuth.libraryapi.controller.dto.ErrorResponse;
-import io.github.hormuth.libraryapi.exception.ExceptionDuplicatedRegister;
-import io.github.hormuth.libraryapi.exception.ExceptionOperationNotPermitted;
+import io.github.hormuth.libraryapi.controller.mappers.AuthorMapper;
 import io.github.hormuth.libraryapi.model.Author;
 import io.github.hormuth.libraryapi.service.AuthorService;
 import jakarta.validation.Valid;
@@ -30,81 +27,70 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RestController
 @RequestMapping("/authors")
 @RequiredArgsConstructor
-public class AuthorController {
+public class AuthorController implements GenericController {
 
     private final AuthorService authorService;
+    private final AuthorMapper authorMapper;
 
     @PostMapping()
-    public ResponseEntity<Object> save(@RequestBody @Valid AuthorDTO entity) {
-        try {
-            var author = entity.mapToAuthor();
-            authorService.save(author);
+    public ResponseEntity<Void> save(@RequestBody @Valid AuthorDTO input) {
 
-            URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(author.getId()).toUri();
+        Author author = authorMapper.toEntity(input);
+        authorService.save(author);
 
-            return ResponseEntity.created(location).build();
-        } catch (ExceptionDuplicatedRegister e) {
-            var errorDto = ErrorResponse.conflict(e.getMessage());
-            return ResponseEntity.status(errorDto.status()).body(errorDto.message());
-        }
+        URI location = generateHeaderLocation(author.getId());
+
+        return ResponseEntity.created(location).build();
+
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<AuthorDTO> findById(@PathVariable("id") String id) {
         var idAuhor = UUID.fromString(id);
-        Optional<Author> author = authorService.findById(idAuhor);
-        if (author.isPresent()) {
-            return ResponseEntity.ok(new AuthorDTO(author.get().getId(), author.get().getName(), author.get().getBirthday(), author.get().getNationality()));
-        }
-        return ResponseEntity.notFound().build();
+
+        return authorService.findById(idAuhor).map(author -> ResponseEntity.ok(authorMapper.toDTO(author))).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Object> delete(@PathVariable("id") String id) {
-        try {
-            var idAuhor = UUID.fromString(id);
-            Optional<Author> author = authorService.findById(idAuhor);
-            if (author.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-            authorService.delete(author.get());
-            return ResponseEntity.noContent().build();
-        } catch (ExceptionOperationNotPermitted e) {
-            var errorResponse = ErrorResponse.standardMessage(e.getMessage());
-            return ResponseEntity.status(errorResponse.status()).body(errorResponse.message());
+    public ResponseEntity<Void> delete(@PathVariable("id") String id) {
+
+        var idAuhor = UUID.fromString(id);
+        Optional<Author> author = authorService.findById(idAuhor);
+        if (author.isEmpty()) {
+            return ResponseEntity.notFound().build();
         }
+        authorService.delete(author.get());
+        return ResponseEntity.noContent().build();
+
     }
 
     @GetMapping()
     public ResponseEntity<List<AuthorDTO>> findAllByNameAndNationality(@RequestParam(value = "name") String name,
             @RequestParam(value = "nationality") String nationality) {
         List<Author> result = authorService.findAllByExample(name, nationality);
-        List<AuthorDTO> authors = result.stream().map(author -> new AuthorDTO(author.getId(), author.getName(), author.getBirthday(), author.getNationality()))
-                .toList();
+        List<AuthorDTO> authors = result.stream().map(authorMapper::toDTO).toList();
+
         return ResponseEntity.ok(authors);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Object> update(@PathVariable("id") String id, @RequestBody AuthorDTO entity) {
-        try {
-            var idAuhor = UUID.fromString(id);
-            Optional<Author> authorExists = authorService.findById(idAuhor);
+    public ResponseEntity<Void> update(@PathVariable("id") String id, @RequestBody AuthorDTO entity) {
 
-            if (authorExists.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
+        var idAuhor = UUID.fromString(id);
+        Optional<Author> authorExists = authorService.findById(idAuhor);
 
-            var author = authorExists.get();
-            author.setName(entity.name());
-            author.setBirthday(entity.birthday());
-
-            authorService.updateById(author);
-
-            return ResponseEntity.noContent().build();
-        } catch (ExceptionDuplicatedRegister e) {
-            var errorDto = ErrorResponse.conflict(e.getMessage());
-            return ResponseEntity.status(errorDto.status()).body(errorDto.message());
+        if (authorExists.isEmpty()) {
+            return ResponseEntity.notFound().build();
         }
+
+        var author = authorExists.get();
+        author.setName(entity.name());
+        author.setBirthday(entity.birthday());
+
+        authorService.updateById(author);
+
+        return ResponseEntity.noContent().build();
+
     }
 
 }
